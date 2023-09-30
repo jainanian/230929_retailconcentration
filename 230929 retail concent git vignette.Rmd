@@ -1,0 +1,185 @@
+---
+title: "230929_retail concentration vignette"
+output: html_document
+date: "2023-09-29"
+---
+
+```{r setup, include=FALSE}
+require(tidyverse)
+require(data.table)
+require(sp)
+require(rgeos)
+require(readr)
+require(raster)
+require(leaflet)
+require(rmapshaper)
+require(sf)
+  require(leaflet)
+    require(leaflet.extras)
+
+  require(leaflet.extras2)
+  require(crosstalk)
+
+# retail_concen_county <-data.table::fread(
+#   "230928_2_retail_concen_county_out.csv"
+# )
+# county_laea <- tigris::counties(cb = TRUE)
+# county_laea_spatial <- county_laea%>%
+# 
+#     st_transform(crs = "+proj=longlat +datum=WGS84 +no_defs ") %>%
+#     methods::as( object = ., Class = "Spatial" ) 
+# county_laea_simp <- county_laea_spatial%>%
+# 
+# 
+#   gSimplify(., tol=0.1, topologyPreserve=TRUE) %>% 
+#   SpatialPolygonsDataFrame(., data = county_laea_spatial@data) %>% 
+#   ms_simplify()
+# 
+# county_laea_simp_df <- county_laea_simp %>% 
+#   sf::st_as_sfc()%>% 
+#     st_transform(crs = "+proj=longlat +datum=WGS84 +no_defs ") %>% 
+#   fortify() %>% 
+#   cbind(
+#     county_laea_simp
+#   )
+# 
+# county_laea_simp_df_centroid <- county_laea %>% 
+# st_centroid(
+#   . 
+# )  %>%
+#   st_coordinates() %>%
+#   cbind(
+#     county_laea%>%
+#       data.frame() %>% 
+#       dplyr::select(-geometry)
+#   ) 
+#  
+# county_laea_simp_df_centroid %>%
+#   rename(
+#     long = X, 
+#     lat = Y
+#   ) %>%
+#   mutate(
+#     GEOID = as.integer(GEOID)
+#   )%>%
+#   dplyr::select(
+#     GEOID, lat, long 
+#   ) %>% 
+#   distinct() %>% 
+#   left_join(
+#     retail_concen_county %>% 
+#       dplyr::select(
+#         -lat, -long
+#       ), 
+#     by = c("GEOID")
+#   ) %>% 
+#   data.table::fwrite(
+#     "//jna_nol/asus/msi/work/farmer welfare/PSD/journal/retail and psd mapping/230928_countypoints.csv"
+#   )
+# "//jna_nol/asus/msi/work/farmer welfare/PSD/journal/retail and psd mapping", outfile = "230928_countyshapes"
+county_laea_simp_df_centroid <- data.table::fread(
+  "230928_countypoints.csv"
+)
+```
+
+# preparing data
+```{r setup, include=FALSE}
+
+  # graphpointsdf = retail_concen_county_out 
+  # graphpointsdf_coltocolor = retail_concen_county_out$county_hhi
+  
+  
+  
+graphpointsfunc_county_poly <- county_laea_simp_df_centroid%>% 
+  mutate(
+    year = year(date)
+  )
+
+
+  graphpointsfuncpal <- colorNumeric(palette = "viridis",  domain = graphpointsfunc_county_poly$county_hhi  )
+
+     graphpointsdf_sd <- SharedData$new(data = graphpointsfunc_county_poly)
+
+  
+  graphpointsfuncpal_countyoutlines <- county_laea_simp_df  
+  # county_laea%>%
+  #   st_make_valid() %>% 
+  #   s2::s2_rebuild() %>%
+  #   sf::st_as_sfc()%>% 
+  #   st_transform(crs = "+proj=longlat +datum=WGS84 +no_defs ") %>% fortify()  %>% 
+  #   cbind(
+  #     county_laea %>% 
+  #       data.frame() %>% 
+  #       select(-geometry)
+  #   )  
+ 
+  
+  graphpointsfuncpal_map <-leaflet() %>%
+  
+  # Add geographic tiles
+  addTiles() %>%
+    # addProviderTiles(
+    #   provider = "CartoDB.Positron"
+    # )  %>%
+  
+  # Add WI state outline
+
+  # Add county outlines
+  addPolygons(
+    data =graphpointsfuncpal_countyoutlines,
+    color = alpha("black", .6),
+    fillColor = NULL,
+    weight = 1,
+    opacity = .5,
+    fillOpacity = 0#,
+    # highlightOptions = 
+    #   highlightOptions(
+    #     color = "black",
+    #     weight = 3,
+    #     bringToFront = FALSE
+    #   )#,
+    # label = ~NAME
+  )
+graphpointsfuncpal_map_points <-  graphpointsfuncpal_map %>%
+  
+  addCircleMarkers(
+    data = graphpointsdf_sd, 
+    lng = ~long,
+    lat = ~lat,
+    label = ~paste0(popup),
+    popup = 
+      ~paste0(
+        popup
+        # "Hospital: ", FacilityName, 
+        # "<br>Zip Code: ", Zip,
+        # "<br>Peer Group: ", PeerGroup,
+        # "<br>Dual-Eligibility: ", round(DualProportion*100, 2), "%",
+        # "<br>Penalties: ", PenalizedCohorts,
+        # "<br>Payment Reduction: ", Penalty, "%"
+      ),
+    color = ~graphpointsfuncpal(county_hhi ),
+    fillOpacity = .75
+  )
+
+
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
